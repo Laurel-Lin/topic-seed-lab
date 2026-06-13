@@ -27,6 +27,17 @@ export const defaultState: AppState = {
   hasNewMaterialSinceAnalysis: false
 };
 
+function normalizeState(nextState: AppState): AppState {
+  return {
+    ...defaultState,
+    ...nextState,
+    ideas: (nextState.ideas || []).map((idea) => ({
+      ...idea,
+      status: idea.status === "感兴趣" ? "感兴趣" : "暂存"
+    }))
+  };
+}
+
 export function useSeedStore() {
   const [state, setState] = useState<AppState>(defaultState);
   const [hydrated, setHydrated] = useState(false);
@@ -34,7 +45,7 @@ export function useSeedStore() {
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setState({ ...defaultState, ...JSON.parse(raw) });
+      if (raw) setState(normalizeState(JSON.parse(raw)));
     } finally {
       setHydrated(true);
     }
@@ -59,7 +70,7 @@ export function useSeedStore() {
         setState((current) => ({ ...current, roughDirection }));
       },
       importState(nextState: AppState) {
-        setState({ ...defaultState, ...nextState });
+        setState(normalizeState(nextState));
       },
       addCard(card: SeedCard) {
         setState((current) => ({
@@ -96,6 +107,14 @@ export function useSeedStore() {
         setState((current) => ({
           ...current,
           ideas: current.ideas.filter((idea) => idea.id !== id),
+          hasNewMaterialSinceAnalysis: true
+        }));
+      },
+      promoteIdeaToCard(card: SeedCard, ideaId: string) {
+        setState((current) => ({
+          ...current,
+          cards: [card, ...current.cards],
+          ideas: current.ideas.filter((idea) => idea.id !== ideaId),
           hasNewMaterialSinceAnalysis: true
         }));
       },

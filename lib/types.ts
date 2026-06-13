@@ -45,7 +45,7 @@ export interface DirectionCluster {
 }
 
 export type IdeaAngleType = "对象" | "场景" | "变量" | "方法" | "问题" | "反向";
-export type IdeaStatus = "感兴趣" | "暂存" | "忽略";
+export type IdeaStatus = "感兴趣" | "暂存";
 
 export interface DivergentIdea {
   id: string;
