@@ -725,10 +725,15 @@ function IdeaDivergence({
   seedMap: Map<string, SeedCard>;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [statusFilter, setStatusFilter] = useState<"全部" | IdeaStatus>("全部");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const activeCards = selectedIds.length ? state.cards.filter((card) => selectedIds.includes(card.id)) : state.cards;
   const interestedCount = state.ideas.filter((idea) => idea.status === "感兴趣").length;
+  const statusPriority: Record<IdeaStatus, number> = { 感兴趣: 0, 暂存: 1, 忽略: 2 };
+  const visibleIdeas = state.ideas
+    .filter((idea) => statusFilter === "全部" || idea.status === statusFilter)
+    .toSorted((a, b) => statusPriority[a.status] - statusPriority[b.status]);
 
   function toggleSeed(id: string) {
     setSelectedIds((current) => (current.includes(id) ? current.filter((item) => item !== id) : [...current, id]));
@@ -760,6 +765,7 @@ function IdeaDivergence({
 
   function ideaToSeedCard(idea: DivergentIdea) {
     actions.addCard(makeSeedCardFromIdea(idea));
+    actions.deleteIdea(idea.id);
   }
 
   return (
@@ -783,6 +789,29 @@ function IdeaDivergence({
           </Button>
         </div>
         {error ? <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div> : null}
+      </Card>
+
+      <Card className="p-4">
+        <div className="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
+          <div>
+            <h3 className="font-bold">发散点筛选</h3>
+            <p className="mt-1 text-sm leading-6 text-ink/56">
+              忽略会保留发散点，方便之后恢复；删除会从发散池彻底移除。转成种子卡后，原发散点会自动移出发散池。
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(["全部", "感兴趣", "暂存", "忽略"] as const).map((status) => (
+              <Button
+                key={status}
+                size="sm"
+                variant={statusFilter === status ? "primary" : "secondary"}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status}
+              </Button>
+            ))}
+          </div>
+        </div>
       </Card>
 
       {state.cards.length ? (
@@ -817,9 +846,11 @@ function IdeaDivergence({
 
       {!state.ideas.length ? (
         <EmptyState title="还没有发散点" text="先添加种子卡，再点击发散灵感。你可以先看扩散结果，再挑选感兴趣的进入方向聚类。" />
+      ) : !visibleIdeas.length ? (
+        <EmptyState title="当前筛选没有结果" text="换一个筛选状态，或继续生成新的发散点。" />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          {state.ideas.map((idea) => (
+          {visibleIdeas.map((idea) => (
             <IdeaCard key={idea.id} idea={idea} seedMap={seedMap} actions={actions} onToSeed={() => ideaToSeedCard(idea)} />
           ))}
         </div>
